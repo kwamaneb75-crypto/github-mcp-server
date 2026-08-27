@@ -26,12 +26,13 @@ const rulesetLevelDescription = "The level at which the ruleset is configured:\n
 	"- 'organization': A ruleset covering repositories in an organization (requires 'org').\n" +
 	"- 'enterprise': A ruleset covering repositories across an enterprise (requires 'enterprise')."
 
-// rulesetReadScopeAccess declares the exhaustive scope challenge policy for
-// repository_ruleset_read. The exact scope challenged depends on the "level"
-// argument: repository reads need "repo", organization reads need "read:org",
-// and enterprise reads need "read:enterprise". A missing or unrecognized
-// level returns no challenge so normal handler validation produces the error.
-func rulesetReadScopeAccess() inventory.ScopeAccess {
+// governanceReadScopeAccess declares the exhaustive scope challenge policy
+// shared by the governance read tools. The exact scope challenged depends on
+// the "level" argument: repository reads need "repo", organization reads need
+// "read:org", and enterprise reads need "read:enterprise". A missing or
+// unrecognized level returns no challenge so normal handler validation
+// produces the error.
+func governanceReadScopeAccess() inventory.ScopeAccess {
 	return scopes.DynamicChallenge(
 		[]scopes.Scope{scopes.Repo, scopes.ReadOrg, scopes.ReadEnterprise},
 		func([]string) bool {
@@ -58,13 +59,13 @@ func rulesetReadScopeAccess() inventory.ScopeAccess {
 	)
 }
 
-// rulesetWriteScopeAccess declares the exhaustive scope challenge policy for
-// create_repository_ruleset. The exact scope challenged depends on the
-// "level" argument: repository writes need "repo", organization writes need
-// "admin:org", and enterprise writes need "admin:enterprise". A missing or
-// unrecognized level returns no challenge so normal handler validation
+// governanceWriteScopeAccess declares the exhaustive scope challenge policy
+// shared by the governance write tools. The exact scope challenged depends on
+// the "level" argument: repository writes need "repo", organization writes
+// need "admin:org", and enterprise writes need "admin:enterprise". A missing
+// or unrecognized level returns no challenge so normal handler validation
 // produces the error.
-func rulesetWriteScopeAccess() inventory.ScopeAccess {
+func governanceWriteScopeAccess() inventory.ScopeAccess {
 	return scopes.DynamicChallenge(
 		[]scopes.Scope{scopes.Repo, scopes.AdminOrg, scopes.AdminEnterprise},
 		func(activeScopes []string) bool {
@@ -183,7 +184,7 @@ func RepositoryRulesetRead(t translations.TranslationHelperFunc) inventory.Serve
 				Required: []string{"level", "method"},
 			}),
 		},
-		rulesetReadScopeAccess(),
+		governanceReadScopeAccess(),
 		func(ctx context.Context, deps ToolDependencies, _ *mcp.CallToolRequest, args map[string]any) (*mcp.CallToolResult, any, error) {
 			level, err := RequiredParam[string](args, "level")
 			if err != nil {
@@ -660,7 +661,7 @@ func CreateRepositoryRuleset(t translations.TranslationHelperFunc) inventory.Ser
 				Required:   []string{"level", "name", "enforcement", "rules"},
 			},
 		},
-		rulesetWriteScopeAccess(),
+		governanceWriteScopeAccess(),
 		func(ctx context.Context, deps ToolDependencies, _ *mcp.CallToolRequest, args map[string]any) (*mcp.CallToolResult, any, error) {
 			level, err := RequiredParam[string](args, "level")
 			if err != nil {
